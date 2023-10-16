@@ -1,4 +1,6 @@
 import asyncio
+import os
+import random
 
 import yt_dlp
 from playsound import playsound
@@ -15,9 +17,29 @@ from moviepy.video.io.VideoFileClip import VideoFileClip
 import time
 
 
+async def disappointed_responses(amount_o_times):
+    file = open('disappointed_phrases.txt')
+
+    # read the content of the file opened
+    disappointed_phrases = file.readlines()
+    file.close()
+    range_boi = len(disappointed_phrases) - 1
+    print(range_boi)
+    return disappointed_phrases[random.randint(0, range_boi)].format(amount_o_times)
+
+
+async def pick_random_sound(directory):
+    files = os.listdir(directory)
+    files = [file for file in files if os.path.isfile(os.path.join(directory, file))]
+    print(files)
+    if files:
+        track = str(random.choice(files))
+        return directory + track
+
+
 class audio_cog():
 
-    def __init__(self, api_credentials=None):
+    def __init__(self):
 
         # all the music related stuff
         self.voice = None
@@ -27,13 +49,13 @@ class audio_cog():
         # 2d array containing [song, channel]
         self.music_queue = []
         self.YDL_OPTIONS = {
-                'format': 'bestaudio/best',
-                'quiet': True,
-            }
+            'format': 'bestaudio/best',
+            'quiet': True,
+        }
         self.FFMPEG_OPTIONS = {
-                'options': '-vn',
-                'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -analyzeduration 0 -loglevel panic'
-            }
+            'options': '-vn',
+            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -analyzeduration 0 -loglevel panic'
+        }
         self.is_connected = False
         self.vc = None
         self.voice_client = None
@@ -43,6 +65,39 @@ class audio_cog():
     def get_vc(self):
         return self.vc
 
+    async def play_sound(self, url):
+        audio_source = discord.FFmpegPCMAudio(url, executable=self.FFMPEG_EXECUTABLE, **self.FFMPEG_OPTIONS)
+
+        self.voice.play(audio_source)
+
+        self.music_queue.pop(0)
+        while self.is_connected:
+            while self.voice.is_playing():
+                await asyncio.sleep(0.1)
+
+            if self.is_paused and not self.voice.is_playing():
+                while self.is_paused:
+                    await asyncio.sleep(0.1)
+
+            elif len(self.music_queue) == 0 and not self.is_paused and not self.voice.is_playing():
+                self.is_connected = False
+                self.is_playing = False
+                print("ENDING")
+                await self.voice.disconnect(force=True)
+            elif len(self.music_queue) > 0 and not self.is_paused and not self.voice.is_playing():
+                song = str(self.music_queue[0])
+
+                audio_source = discord.FFmpegPCMAudio(await self.find_url(song), executable=self.FFMPEG_EXECUTABLE,
+                                                      **self.FFMPEG_OPTIONS)
+
+                self.voice.play(audio_source)
+                self.music_queue.pop(0)
+
+    async def find_url(self, query):
+        with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
+            info_dict = ydl.extract_info(query, download=False)
+            return info_dict['url']
+
     async def play_music(self):
 
         if len(self.music_queue) > 0:
@@ -50,48 +105,13 @@ class audio_cog():
 
             print("in play music")
 
-            song = str(self.music_queue[0])
-
-            print(song)
-
             if not self.is_connected:
                 print("In connected")
                 self.voice = await self.vc.connect()
                 self.is_connected = True
                 await self.play_greeting()
-
-            with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
-                info_dict = ydl.extract_info(song, download=False)
-                url = info_dict['url']
-
-            audio_source = discord.FFmpegPCMAudio(url, executable=self.FFMPEG_EXECUTABLE, **self.FFMPEG_OPTIONS)
-
-            self.voice.play(audio_source)
-            self.music_queue.pop(0)
-            while self.is_connected:
-                while self.voice.is_playing():
-                    await asyncio.sleep(0.1)
-
-                if self.is_paused and not self.voice.is_playing():
-                    while self.is_paused:
-                        await asyncio.sleep(0.1)
-
-                elif len(self.music_queue) == 0 and not self.is_paused and not self.voice.is_playing():
-                    self.is_connected = False
-                    self.is_playing = False
-                    print("ENDING")
-                    await self.voice.disconnect(force=True)
-                elif len(self.music_queue) > 0 and not self.is_paused and not self.voice.is_playing():
-                    song = str(self.music_queue[0])
-
-                    with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
-                        info_dict = ydl.extract_info(song, download=False)
-                        url = info_dict['url']
-
-                    audio_source = discord.FFmpegPCMAudio(url, executable=self.FFMPEG_EXECUTABLE, **self.FFMPEG_OPTIONS)
-
-                    self.voice.play(audio_source)
-                    self.music_queue.pop(0)
+            song = str(self.music_queue[0])
+            await self.play_sound(await self.find_url(song))
 
     # @commands.command(name="play", aliases=["p", "playing"], help="Plays a selected song from youtube")
     async def play(self, query, interaction):
@@ -104,6 +124,7 @@ class audio_cog():
 
         elif self.is_paused:
             self.vc.resume()
+            self.music_queue.append(query)
 
         elif self.is_playing:
             self.music_queue.append(query)
@@ -132,13 +153,15 @@ class audio_cog():
             self.voice.resume()
 
     # @commands.command(name="skip", aliases=["s"], help="Skips the current song being played")
+    # This needs to be fixed
     async def skip(self):
-        if self.vc != None and self.vc:
+        if self.vc is not None and self.vc:
             self.vc.stop()
             # try to play next in the queue if it exists
             await self.play_music()
 
     # @commands.command(name="queue", aliases=["q"], help="Displays the current songs in queue")
+    # This needs to be fixed
     async def queue(self, ctx):
         retval = ""
         for i in range(0, len(self.music_queue)):
@@ -167,3 +190,53 @@ class audio_cog():
         self.voice.play(discord.FFmpegPCMAudio("StartUpGreeting.wav", executable=self.FFMPEG_EXECUTABLE))
         while self.voice.is_playing():
             await asyncio.sleep(0.1)
+
+    async def play_random_Sound(self, interaction, directory, ffmpeg_executable, PLAY_SOUND_RANDOM_MAX):
+        user_message = str(interaction.content)
+        username = str(interaction.author)
+
+        self.vc = interaction.author.voice.channel
+
+        if self.vc is None:
+            # you need to be connected so that the bot knows where to go
+            return "Connect to a voice channel!"
+
+        if user_message == "random sound":
+
+            self.voice = await self.vc.connect()
+            self.voice.play(
+                discord.FFmpegPCMAudio(await pick_random_sound(directory), executable=ffmpeg_executable))
+            while self.voice.is_playing():
+                await asyncio.sleep(0.1)
+
+            if not self.voice.is_playing():
+                await self.voice.disconnect()
+
+        print(user_message)
+        amount_o_times = user_message.rsplit('x')[1]
+
+        if amount_o_times.isdigit():
+
+            if int(amount_o_times) < int(PLAY_SOUND_RANDOM_MAX):
+
+                await interaction.channel.send(f'Playing sounds for {amount_o_times} times')
+
+                self.voice = await self.vc.connect()
+
+                for x in range(int(amount_o_times)):
+
+                    self.voice.play(
+                        discord.FFmpegPCMAudio(await pick_random_sound(directory), executable=ffmpeg_executable))
+                    while self.voice.is_playing():
+                        await asyncio.sleep(0.1)
+
+                await self.voice.disconnect(force=True)
+
+            elif (int(amount_o_times) >= int(PLAY_SOUND_RANDOM_MAX)) and (username == "yifendes"):
+
+                for x in range(int(amount_o_times)):
+                    await interaction.author.send(await disappointed_responses(amount_o_times))
+
+            else:
+
+                await interaction.channel.send(await disappointed_responses(amount_o_times))

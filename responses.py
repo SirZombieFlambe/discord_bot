@@ -1,7 +1,5 @@
-import asyncio
-import os
 import random
-
+from discord.ui import Button, View
 import discord
 from discord import Embed
 
@@ -13,7 +11,6 @@ async def get_response(music_bot, interaction):
 
     if p_message == 'hello':
         return 'UwU Master'
-
 
     elif p_message == 'roll':
         return "Rrrrrollling :{0}".format(str(random.randint(1, 6)))
@@ -73,8 +70,47 @@ General commands:
         
                ```
                """
+    elif "radio" == p_message:
+        print("Running radio")
+        file_path = "radio.txt"
+        buttons = read_info_text_from_file(file_path)
 
-    elif 'p test' in p_message:
+        button1 = Button(label=buttons[0].description, style=discord.ButtonStyle.blurple, emoji="▶️")
+        button2 = Button(label=buttons[1].description, style=discord.ButtonStyle.blurple, emoji="▶️")
+        button3 = Button(label=buttons[2].description, style=discord.ButtonStyle.blurple, emoji="▶️")
+
+        async def button_callback1(button_interaction):
+            embed = discord.Embed(title=buttons[0].title, description=buttons[0].description, url=buttons[0].url,
+                                  color=buttons[0].color)
+            await button_interaction.response.send_message(embed=embed)
+            await music_bot.play(buttons[0].url, interaction)
+
+        async def button_callback2(button_interaction):
+            embed = discord.Embed(title=buttons[1].title, description=buttons[1].description, url=buttons[1].url,
+                                  color=buttons[1].color)
+            await button_interaction.response.send_message(embed=embed)
+            await music_bot.play(buttons[1].url, interaction)
+
+        async def button_callback3(button_interaction):
+            embed = discord.Embed(title=buttons[2].title, description=buttons[2].description, url=buttons[2].url,
+                                  color=buttons[2].color)
+            await button_interaction.response.send_message(embed=embed)
+            await music_bot.play(buttons[2].url, interaction)
+
+        view = View()
+        view.add_item(button1)
+        view.add_item(button2)
+        view.add_item(button3)
+        await interaction.channel.send("Pick a radio:", view=view)
+        button1.callback = button_callback1
+        button2.callback = button_callback2
+        button3.callback = button_callback3
+
+    elif "pause" == p_message:
+        print("Trying to pause")
+        return await music_bot.pause()
+
+    elif 'p test' == p_message:
         await music_bot.play("https://www.youtube.com/watch?v=zAnQg7uFQCI", interaction)
 
     elif "p " in p_message or "play" in p_message:
@@ -82,20 +118,19 @@ General commands:
         return_string = await music_bot.play(url, interaction)
         return return_string
 
-    elif "pause" == p_message:
-        print("Trying to pause")
-        return await music_bot.pause()
-
-    elif "disconnect" or "stop" == p_message:
+    elif "disconnect" == p_message or "stop" == p_message:
         print("Stop")
         result = music_bot.is_connected
         print(result)
+        print(p_message)
         if result:
             await music_bot.stop()
+            return "Disconnecting JiggleBack"
         else:
-            await voice.disconnect()
-        return "Disconnecting JiggleBack"
+            return "Uhhhh did you mean that?"
 
+    elif "random sound" in p_message:
+        await music_bot.play_random_Sound(interaction, bot.directory, bot.ffmpeg_executable, bot.PLAY_SOUND_RANDOM_MAX)
 
     else:
         error_message: Embed = discord.Embed(
@@ -104,67 +139,26 @@ General commands:
         await interaction.channel.send(embed=error_message)
 
 
-async def pick_random_sound(directory):
-    files = os.listdir(directory)
-    files = [file for file in files if os.path.isfile(os.path.join(directory, file))]
-    print(files)
-    if files:
-        track = str(random.choice(files))
-        return directory + track
+def read_info_text_from_file(file_path):
+    embeded = []
+    with open(file_path, 'r', encoding='utf-8') as file:
+        i = 0
+        for line in file:
+            current_line = line
+            title = current_line.split('title="')[1].split('" description=')[0]
+            description = current_line.split('description="')[1].split('" url=')[0]
+            url = current_line.split(" url='")[1].split("' color=")[0]
+            color = current_line.split("color=")[1]
+            embeded.append(EmbededMessages(title, description, url, color))
+            i = i + 1
+
+    return embeded
 
 
-async def play_random_Sound(interaction, directory, ffmpeg_executable, PLAY_SOUND_RANDOM_MAX):
-    user_message = str(interaction.content)
-    username = str(interaction.author)
+class EmbededMessages:
 
-    voice_channel = interaction.author.voice.channel
-
-    if user_message == "random sound":
-        global voice
-        voice = await voice_channel.connect()
-        voice.play(discord.FFmpegPCMAudio(await pick_random_sound(directory), executable=ffmpeg_executable))
-        while voice.is_playing():
-            await asyncio.sleep(0.1)
-
-        if not voice.is_playing():
-            await voice.disconnect()
-
-    print(user_message)
-    amount_o_times = user_message.rsplit('x')[1]
-
-    if amount_o_times.isdigit():
-
-        if int(amount_o_times) < int(PLAY_SOUND_RANDOM_MAX):
-
-            await interaction.channel.send(f'Playing sounds for {amount_o_times} times')
-
-            voice = await voice_channel.connect()
-
-            for x in range(int(amount_o_times)):
-
-                voice.play(discord.FFmpegPCMAudio(await pick_random_sound(directory), executable=ffmpeg_executable))
-                while voice.is_playing():
-                    await asyncio.sleep(0.1)
-
-            await voice.disconnect(force=True)
-
-        elif (int(amount_o_times) >= int(PLAY_SOUND_RANDOM_MAX)) and (username == "yifendes"):
-
-            for x in range(int(amount_o_times)):
-                await interaction.author.send(await disappointed_responses(amount_o_times))
-
-        else:
-
-            await interaction.channel.send(await disappointed_responses(amount_o_times))
-
-
-async def disappointed_responses(amount_o_times):
-    file = open('disappointed_phrases.txt')
-
-    # read the content of the file opened
-    disappointed_phrases = file.readlines()
-    range_boi = len(disappointed_phrases) - 1
-    print(range_boi)
-    return disappointed_phrases[random.randint(0, range_boi)].format(amount_o_times)
-
-
+    def __init__(self, title, description, url, color):
+        self.title = title
+        self.description = description
+        self.url = url
+        self.color = int(color.split("\n")[0], 16)

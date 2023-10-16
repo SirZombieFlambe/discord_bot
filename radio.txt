@@ -1,0 +1,3 @@
+title="Chillhop Radio - jazzy & lofi hip hop beats 🐾" description="Chillhop Music" url='https://www.youtube.com/watch?v=5yx6BWlEVcY' color=0xd1851b
+title="Halloween Lofi Radio 🎃" description="Halloween lofi" url='https://www.youtube.com/watch?v=ULQhvIGG27Q' color=0x660000
+title="Classic Rock Radio 🎸" description="Classic Rock" url='https://www.youtube.com/watch?v=dF9JXK34m3M' color=0xed0c0c

@@ -22,15 +22,14 @@ async def send_message(interaction, is_private, music_bot):
 async def send_is_connected_error(interaction):
     await interaction.channel.send("The bot is currently playing audio, please wait until audio finishes")
 
+directory = 'D:/Sound Board/discord/'
+ffmpeg_executable = "D:/RandomDownload/ffmpeg.exe"
+PLAY_SOUND_RANDOM_MAX = '16'
 
 def run_discord_bot(TOKEN_1):
     intents = discord.Intents.default()
     intents.message_content = True
     client_1 = discord.Client(intents=intents)
-
-    directory = "D:/Sound Board/discord/"
-    ffmpeg_executable = "D:/RandomDownload/ffmpeg.exe"
-    PLAY_SOUND_RANDOM_MAX = '16'
 
 
     audio_bot = audio_cog()
@@ -42,7 +41,7 @@ def run_discord_bot(TOKEN_1):
     sudoers_file = "sudoers_list.txt"  # Replace with your file path
     with open(sudoers_file, 'r') as file:
         allowed_users = [line.strip() for line in file]
-
+    file.close()
     @client_1.event
     async def on_voice_state_update(member, before, after):
 
@@ -103,18 +102,12 @@ def run_discord_bot(TOKEN_1):
             if user_message[0] == '?':
 
                 await send_message(interaction, True, audio_bot)
-            elif "random sound" in user_message:
-                if audio_bot.is_connected:
-                    await send_is_connected_error(interaction)
-                else:
-                    await responses.play_random_Sound(interaction, directory, ffmpeg_executable, PLAY_SOUND_RANDOM_MAX)
 
             elif user_message == '!restart':
 
                 await restart(interaction)
 
             else:
-
                 await send_message(interaction, False, audio_bot)
         elif user_message.startswith('/'):
             print(user_message)
@@ -124,7 +117,7 @@ def run_discord_bot(TOKEN_1):
         greetings_file = "uwu_greetings.txt"  # Replace with your file path
         with open(greetings_file, "r", encoding="utf-8") as file2:
             greetings = file2.readlines()
-
+        file2.close()
         # Choose a random greeting
         random_greeting = random.choice(greetings)
         return random_greeting
@@ -134,6 +127,7 @@ def run_discord_bot(TOKEN_1):
         print(interaction.author.name)
         current_file = open("sudoers_list.txt")
         allowed_sudo_user = current_file.readlines()
+        current_file.close()
         for i in range(len(allowed_sudo_user)):
             allowed_sudo_user[i] = allowed_sudo_user[i].strip('\n')
 
@@ -150,8 +144,8 @@ def run_discord_bot(TOKEN_1):
                                                            check=check)  # You can adjust the timeout as needed
 
                 # Check if the password is correct
-                if password_message.content == "thiccus diccus":
-                    
+                if password_message.content == "BREH":
+
                     await interaction.channel.send("Password is correct. Restarting...")
                     await audio_bot.clear_queue()
                     await client_1.close()
