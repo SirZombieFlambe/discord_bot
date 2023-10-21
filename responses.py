@@ -6,6 +6,7 @@ from discord import Embed
 import bot
 
 
+
 async def get_response(music_bot, interaction):
     p_message = str(interaction.content)
 
@@ -75,36 +76,24 @@ General commands:
         file_path = "radio.txt"
         buttons = read_info_text_from_file(file_path)
 
-        button1 = Button(label=buttons[0].description, style=discord.ButtonStyle.blurple, emoji="▶️")
-        button2 = Button(label=buttons[1].description, style=discord.ButtonStyle.blurple, emoji="▶️")
-        button3 = Button(label=buttons[2].description, style=discord.ButtonStyle.blurple, emoji="▶️")
-
-        async def button_callback1(button_interaction):
-            embed = discord.Embed(title=buttons[0].title, description=buttons[0].description, url=buttons[0].url,
-                                  color=buttons[0].color)
-            await button_interaction.response.send_message(embed=embed)
-            await music_bot.play(buttons[0].url, interaction)
-
-        async def button_callback2(button_interaction):
-            embed = discord.Embed(title=buttons[1].title, description=buttons[1].description, url=buttons[1].url,
-                                  color=buttons[1].color)
-            await button_interaction.response.send_message(embed=embed)
-            await music_bot.play(buttons[1].url, interaction)
-
-        async def button_callback3(button_interaction):
-            embed = discord.Embed(title=buttons[2].title, description=buttons[2].description, url=buttons[2].url,
-                                  color=buttons[2].color)
-            await button_interaction.response.send_message(embed=embed)
-            await music_bot.play(buttons[2].url, interaction)
+        for button in buttons:
+            button.set_cog(music_bot)
+            button.set_interaction(interaction)
 
         view = View()
-        view.add_item(button1)
-        view.add_item(button2)
-        view.add_item(button3)
+
+        for button in buttons:
+            view.add_item(button.button)
+
         await interaction.channel.send("Pick a radio:", view=view)
-        button1.callback = button_callback1
-        button2.callback = button_callback2
-        button3.callback = button_callback3
+
+        for button in buttons:
+            button.button.callback = button.button_callback
+
+    elif "skip" == p_message:
+        print("trying to skip")
+        return await music_bot.skip()
+
 
     elif "pause" == p_message:
         print("Trying to pause")
@@ -162,3 +151,18 @@ class EmbededMessages:
         self.description = description
         self.url = url
         self.color = int(color.split("\n")[0], 16)
+        self.audio_cog = None
+        self.interaction = None
+        self.button = Button(label=self.description, style=discord.ButtonStyle.blurple, emoji="▶️")
+
+    async def button_callback(self, button_interaction):
+        embed = discord.Embed(title=self.title, description=self.description, url=self.url,
+                              color=self.color)
+        await button_interaction.response.send_message(embed=embed)
+        await self.audio_cog.play(self.url, self.interaction)
+
+    def set_cog(self, audio_cog):
+        self.audio_cog = audio_cog
+
+    def set_interaction(self, interaction):
+        self.interaction = interaction

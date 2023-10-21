@@ -61,6 +61,7 @@ class audio_cog():
         self.voice_client = None
         self.guild = None
         self.FFMPEG_EXECUTABLE = "D:/RandomDownload/ffmpeg.exe"
+        self.is_skipped = False
 
     def get_vc(self):
         return self.vc
@@ -72,19 +73,26 @@ class audio_cog():
 
         self.music_queue.pop(0)
         while self.is_connected:
-            while self.voice.is_playing():
+
+            while self.voice.is_playing() and not self.is_skipped:
                 await asyncio.sleep(0.1)
 
-            if self.is_paused and not self.voice.is_playing():
+            if self.is_paused and not self.voice.is_playing() and not self.is_skipped:
                 while self.is_paused:
                     await asyncio.sleep(0.1)
+                    print(self.is_skipped)
 
             elif len(self.music_queue) == 0 and not self.is_paused and not self.voice.is_playing():
                 self.is_connected = False
                 self.is_playing = False
                 print("ENDING")
                 await self.voice.disconnect(force=True)
-            elif len(self.music_queue) > 0 and not self.is_paused and not self.voice.is_playing():
+            elif (len(self.music_queue) > 0 and not self.is_paused and not self.voice.is_playing()) or self.is_skipped:
+                if self.is_skipped:
+                    self.is_skipped = False
+                    print("BREH BREH")
+
+
                 song = str(self.music_queue[0])
 
                 audio_source = discord.FFmpegPCMAudio(await self.find_url(song), executable=self.FFMPEG_EXECUTABLE,
@@ -99,19 +107,21 @@ class audio_cog():
             return info_dict['url']
 
     async def play_music(self):
-
         if len(self.music_queue) > 0:
             self.is_playing = True
 
-            print("in play music")
-
             if not self.is_connected:
-                print("In connected")
                 self.voice = await self.vc.connect()
                 self.is_connected = True
-                await self.play_greeting()
+                #await self.play_greeting()
+
             song = str(self.music_queue[0])
             await self.play_sound(await self.find_url(song))
+
+        else:
+            self.is_playing = False
+            self.is_connected = False
+            await self.voice.disconnect(force=True)
 
     # @commands.command(name="play", aliases=["p", "playing"], help="Plays a selected song from youtube")
     async def play(self, query, interaction):
@@ -155,13 +165,14 @@ class audio_cog():
     # @commands.command(name="skip", aliases=["s"], help="Skips the current song being played")
     # This needs to be fixed
     async def skip(self):
-        if self.vc is not None and self.vc:
-            self.vc.stop()
-            # try to play next in the queue if it exists
-            await self.play_music()
+        print("SKIPPING")
+        if self.is_playing:
+            self.is_skipped = True
+            self.voice.pause()
+            print(self.music_queue)
+
 
     # @commands.command(name="queue", aliases=["q"], help="Displays the current songs in queue")
-    # This needs to be fixed
     async def queue(self, ctx):
         retval = ""
         for i in range(0, len(self.music_queue)):
