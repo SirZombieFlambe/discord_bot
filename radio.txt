@@ -4,3 +4,4 @@ title="Classic Rock Radio 🎸" description="Classic Rock" url='https://www.yout
 title="Work Jazz Music ☕️" description="Jazz Vibe" url='https://www.youtube.com/watch?v=S0zv1GMBRtE' color=4169e1
 title="Old Minecraft Relaxing Music🎵 With Campfire And Wave Ambiance🎵" description="Minecraft Relaxing Music🎵" url='https://www.youtube.com/watch?v=Gi4W1h6P9CM' color=3e5c20
 title="The Fitness Gram Pacer Test" description="Pacer Test" url='https://www.youtube.com/watch?v=7YhHg1wwa1I&t=1s' color=FFA500
+title="Cyberpunk🦿" description="Cyberpunk and Dark Techno" url='https://www.youtube.com/live/6qYTQI8FqzQ?si=DSIMcVWmzbU6vmim' color=bd00ff
