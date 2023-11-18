@@ -13,8 +13,22 @@ async def get_response(music_bot, interaction):
     if p_message == 'hello':
         return 'UwU Master'
 
+    elif "jiffy" in p_message:
+        p_message = p_message.rsplit("jiffy")[1]
+        p_message = p_message.split()
+        pp_message = ""
+
+        for word in list(p_message):
+            temp_list = list(word)
+            temp_list[0] = "j"
+
+            pp_message = pp_message + " " + word[0:].replace(word[0], "j", 1)
+
+        return pp_message
+
+
     elif p_message == 'roll':
-        return "Rrrrrollling :{0}".format(str(random.randint(1, 6)))
+        return "Rrrrrollling: {0}".format(str(random.randint(1, 6)))
 
     elif p_message == '/help':
         return """ ```
