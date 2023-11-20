@@ -4,6 +4,7 @@ import discord
 from discord import Embed
 
 import bot
+import colors
 
 
 
@@ -36,7 +37,8 @@ async def get_response(music_bot, interaction):
         /help - displays all the available commands
         /phelp - displays all the available Music commands
         <Chat Commands>
-        !Hello - says hi to the user
+        !hello - says hi to the user
+        !jiffy - [Whatever words turned to "jords" that make up "jentences"]
         !roll - Rolls a 1d6
         <Random Commands>
         !random sound [xAMOUNT OF TIMES WANTED TO PLAY... Be nice]
@@ -118,8 +120,14 @@ General commands:
 
     elif "p " in p_message or "play" in p_message:
         url = p_message.split(" ")[1]
-        return_string = await music_bot.play(url, interaction)
-        return return_string
+        results = await music_bot.play(url, interaction)
+        if results[1] is not True:
+            color = colors.maroon
+            return_message: Embed = discord.Embed(
+                description=results[0],
+                color=color)
+            return return_message
+
 
     elif "disconnect" == p_message or "stop" == p_message:
         print("Stop")
@@ -128,9 +136,15 @@ General commands:
         print(p_message)
         if result:
             await music_bot.stop()
-            return "Disconnecting JiggleBack"
+            return_message: Embed = discord.Embed(
+            description="Disconnecting JiggleBack",
+            color=colors.green)
+            return return_message
         else:
-            return "Uhhhh did you mean that?"
+            return_message: Embed = discord.Embed(
+                description="Uhhhh did you mean that?",
+                color=colors.firebrick)
+            return return_message
 
     elif "random sound" in p_message:
         await music_bot.play_random_Sound(interaction, bot.directory, bot.ffmpeg_executable, bot.PLAY_SOUND_RANDOM_MAX)
@@ -138,7 +152,7 @@ General commands:
     else:
         error_message: Embed = discord.Embed(
             description="Command not found. Type /help for a list of all available commands",
-            color=0xFF5733)
+            color=colors.outrageousorange)
         await interaction.channel.send(embed=error_message)
 
 

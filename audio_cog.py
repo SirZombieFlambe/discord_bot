@@ -95,7 +95,7 @@ class audio_cog():
 
                 song = str(self.music_queue[0])
 
-                audio_source = discord.FFmpegPCMAudio(await self.find_url(song), executable=self.FFMPEG_EXECUTABLE,
+                audio_source = discord.FFmpegPCMAudio((await self.find_url(song))[0], executable=self.FFMPEG_EXECUTABLE,
                                                       **self.FFMPEG_OPTIONS)
 
                 self.voice.play(audio_source)
@@ -103,8 +103,13 @@ class audio_cog():
 
     async def find_url(self, query):
         with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
-            info_dict = ydl.extract_info(query, download=False)
-            return info_dict['url']
+            try:
+                info_dict = ydl.extract_info(query, download=False)
+                return [info_dict['url'], True]
+            except Exception:
+                print(Exception)
+                return ["", False]
+
 
     async def play_music(self):
         if len(self.music_queue) > 0:
@@ -116,7 +121,15 @@ class audio_cog():
                 #await self.play_greeting()
 
             song = str(self.music_queue[0])
-            await self.play_sound(await self.find_url(song))
+            results = await self.find_url(song)
+            success = results[1]
+            await self.play_sound(results[0])
+            if success is True:
+                return ["STUFF Blah", success]
+            else:
+                print("AKLJSHDDHKJASHJK")
+                return [f"I'm sorry, I cant find {song}. Are you sure you typed that right?", success]
+
 
         else:
             self.is_playing = False
@@ -130,7 +143,7 @@ class audio_cog():
 
         if self.vc is None:
             # you need to be connected so that the bot knows where to go
-            return "Connect to a voice channel!"
+            return ["Connect to a voice channel!", False]
 
         elif self.is_paused:
             self.vc.resume()
@@ -142,7 +155,7 @@ class audio_cog():
         else:
             self.music_queue.append(query)
             print(self.music_queue)
-            await self.play_music()
+            return await self.play_music()
 
     # @commands.command(name="pause", help="Pauses the current song being played")
     async def pause(self):

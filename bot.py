@@ -14,7 +14,7 @@ async def send_message(interaction, is_private, music_bot):
 
     try:
         response = await responses.get_response(music_bot, interaction)
-        await interaction.author.send(response) if is_private else await interaction.channel.send(response)
+        await interaction.author.send(embed=response) if is_private else await interaction.channel.send(embed=response)
 
     except Exception as e:
 
