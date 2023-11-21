@@ -7,7 +7,6 @@ import bot
 import colors
 
 
-
 async def get_response(music_bot, interaction):
     p_message = str(interaction.content)
 
@@ -108,15 +107,31 @@ General commands:
 
     elif "skip" == p_message:
         print("trying to skip")
-        return await music_bot.skip()
-
+        result = await music_bot.skip()
+        return_message: Embed = discord.Embed(
+            description=result,
+            color=colors.ceruleanblue
+        )
+        return return_message
 
     elif "pause" == p_message:
         print("Trying to pause")
-        return await music_bot.pause()
+        result = await music_bot.pause()
+        return_message: Embed = discord.Embed(
+            description=result,
+            color=colors.red
+        )
+        return return_message
+
 
     elif 'p test' == p_message:
         await music_bot.play("https://www.youtube.com/watch?v=zAnQg7uFQCI", interaction)
+        return_message: Embed = discord.Embed(
+            description="Audio Test",
+            color=colors.azure
+        )
+        return return_message
+
 
     elif "p " in p_message or "play" in p_message:
         url = p_message.split(" ")[1]
@@ -128,7 +143,6 @@ General commands:
                 color=color)
             return return_message
 
-
     elif "disconnect" == p_message or "stop" == p_message:
         print("Stop")
         result = music_bot.is_connected
@@ -137,8 +151,8 @@ General commands:
         if result:
             await music_bot.stop()
             return_message: Embed = discord.Embed(
-            description="Disconnecting JiggleBack",
-            color=colors.green)
+                description="Disconnecting JiggleBack",
+                color=colors.green)
             return return_message
         else:
             return_message: Embed = discord.Embed(
@@ -153,7 +167,7 @@ General commands:
         error_message: Embed = discord.Embed(
             description="Command not found. Type /help for a list of all available commands",
             color=colors.outrageousorange)
-        await interaction.channel.send(embed=error_message)
+        return error_message
 
 
 def read_info_text_from_file(file_path):

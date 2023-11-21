@@ -176,13 +176,13 @@ class audio_cog():
             self.voice.resume()
 
     # @commands.command(name="skip", aliases=["s"], help="Skips the current song being played")
-    # This needs to be fixed
     async def skip(self):
         print("SKIPPING")
         if self.is_playing:
             self.is_skipped = True
             self.voice.pause()
             print(self.music_queue)
+            return "Skipped"
 
 
     # @commands.command(name="queue", aliases=["q"], help="Displays the current songs in queue")

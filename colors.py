@@ -16,7 +16,7 @@ blueviolet=0x8a2be2  #138,43,226
 brown=0xa52a2a  #165,42,42
 burlywood=0xdeb887  #222,184,135
 cadetblue=0x5f9ea0  #95,158,160
-
+ceruleanblue=0x2a52be #42,82,190
 chartreuse=0x7fff00  #127,255,0
 
 chocolate=0xd2691e  #210,105,30

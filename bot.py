@@ -19,12 +19,15 @@ async def send_message(interaction, is_private, music_bot):
     except Exception as e:
 
         print(f'{e} soooo error')
+
+
 async def send_is_connected_error(interaction):
     await interaction.channel.send("The bot is currently playing audio, please wait until audio finishes")
 
 directory = 'D:/Sound Board/discord/'
 ffmpeg_executable = "D:/RandomDownload/ffmpeg.exe"
 PLAY_SOUND_RANDOM_MAX = '16'
+
 
 def run_discord_bot(TOKEN_1):
     intents = discord.Intents.default()
