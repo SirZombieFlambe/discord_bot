@@ -148,12 +148,14 @@ outrageousorange=0xFF5733 #255,87,51
 orange=0xffa500  #255,165,0
 orangered=0xff4500  #255,69,0
 orchid=0xda70d6  #218,112,214
+
 palegoldenrod=0xeee8aa  #238,232,170
 
 palegreen=0x98fb98  #152,251,152
 
 paleturquoise=0xafeeee  #175,238,238
 palevioletred=0xdb7093  #219,112,147
+pantone448C=0x4A412A  #74,65,42
 papayawhip=0xffefd5  #255,239,213
 peachpuff=0xffdab9  #255,218,185
 

@@ -1,7 +1,7 @@
 import asyncio
 import os
 import random
-
+from discord import Embed
 import yt_dlp
 from playsound import playsound
 import discord
@@ -15,6 +15,9 @@ import ffmpeg
 from youtube_dl import YoutubeDL
 from moviepy.video.io.VideoFileClip import VideoFileClip
 import time
+
+import bot
+import colors
 
 
 async def disappointed_responses(amount_o_times):
@@ -66,9 +69,12 @@ class audio_cog():
     def get_vc(self):
         return self.vc
 
-    async def play_sound(self, url):
+    async def play_sound(self, interaction, url, title):
         audio_source = discord.FFmpegPCMAudio(url, executable=self.FFMPEG_EXECUTABLE, **self.FFMPEG_OPTIONS)
-
+        return_message: Embed = discord.Embed(
+            description=f"Now playing {title}",
+            color=colors.green)
+        await bot.send_message(interaction, return_message)
         self.voice.play(audio_source)
 
         self.music_queue.pop(0)
@@ -94,9 +100,16 @@ class audio_cog():
 
 
                 song = str(self.music_queue[0])
+                results = await self.find_url(song)
+                title = results[1]
 
-                audio_source = discord.FFmpegPCMAudio((await self.find_url(song))[0], executable=self.FFMPEG_EXECUTABLE,
+                audio_source = discord.FFmpegPCMAudio(results[0], executable=self.FFMPEG_EXECUTABLE,
                                                       **self.FFMPEG_OPTIONS)
+
+                return_message: Embed = discord.Embed(
+                    description=f"Now playing {title}",
+                    color=colors.green)
+                await bot.send_message(interaction, return_message)
 
                 self.voice.play(audio_source)
                 self.music_queue.pop(0)
@@ -105,13 +118,14 @@ class audio_cog():
         with yt_dlp.YoutubeDL(self.YDL_OPTIONS) as ydl:
             try:
                 info_dict = ydl.extract_info(query, download=False)
-                return [info_dict['url'], True]
+                video_title = info_dict.get('title', None)
+                return [info_dict['url'], video_title, True]
             except Exception:
                 print(Exception)
-                return ["", False]
+                return ["", "", False]
 
 
-    async def play_music(self):
+    async def play_music(self, interaction):
         if len(self.music_queue) > 0:
             self.is_playing = True
 
@@ -122,13 +136,18 @@ class audio_cog():
 
             song = str(self.music_queue[0])
             results = await self.find_url(song)
-            success = results[1]
-            await self.play_sound(results[0])
-            if success is True:
-                return ["STUFF Blah", success]
-            else:
-                print("AKLJSHDDHKJASHJK")
-                return [f"I'm sorry, I cant find {song}. Are you sure you typed that right?", success]
+            success = results[2]
+            await self.play_sound(interaction, results[0], results[1])
+            if success is not True:
+                message = f"I'm sorry, I cant find anything with the url: {song}. Are you sure you typed that right?"
+                color = colors.pantone448C
+                return_message: Embed = discord.Embed(
+                    description=message,
+                    color=color)
+                await bot.send_message(interaction, return_message)
+
+
+
 
 
         else:
@@ -138,8 +157,12 @@ class audio_cog():
 
     # @commands.command(name="play", aliases=["p", "playing"], help="Plays a selected song from youtube")
     async def play(self, query, interaction):
-
-        self.vc = interaction.author.voice.channel
+        print(3)
+        try:
+            print("CHECKING")
+            self.vc = interaction.author.voice.channel
+        except Exception:
+            self.vc = None
 
         if self.vc is None:
             # you need to be connected so that the bot knows where to go
@@ -155,19 +178,24 @@ class audio_cog():
         else:
             self.music_queue.append(query)
             print(self.music_queue)
-            return await self.play_music()
+            return await self.play_music(interaction)
+
 
     # @commands.command(name="pause", help="Pauses the current song being played")
     async def pause(self):
-        if not self.is_paused:
-            self.is_paused = True
-            self.voice.pause()
-            print(self.is_paused)
-            return "music paused"
-        elif self.is_paused:
-            self.is_paused = False
-            self.voice.resume()
-            return "music resumed"
+        if self.is_playing:
+            if not self.is_paused:
+                self.is_paused = True
+                self.voice.pause()
+                print("music paused")
+                return "Music paused"
+            elif self.is_paused:
+                self.is_paused = False
+                self.voice.resume()
+                print("music resumed")
+                return "Music resumed"
+        else:
+            return "Uhhhhhhhh Re think broski"
 
     # @commands.command(name="resume", aliases=["r"], help="Resumes playing with the discord bot")
     async def resume(self):
@@ -178,11 +206,15 @@ class audio_cog():
     # @commands.command(name="skip", aliases=["s"], help="Skips the current song being played")
     async def skip(self):
         print("SKIPPING")
-        if self.is_playing:
+        if self.is_playing and not self.is_paused:
             self.is_skipped = True
             self.voice.pause()
             print(self.music_queue)
             return "Skipped"
+        elif self.is_paused:
+            return "Bro...."
+        else:
+            return "Why?"
 
 
     # @commands.command(name="queue", aliases=["q"], help="Displays the current songs in queue")
@@ -243,7 +275,11 @@ class audio_cog():
 
             if int(amount_o_times) < int(PLAY_SOUND_RANDOM_MAX):
 
-                await interaction.channel.send(f'Playing sounds for {amount_o_times} times')
+                return_message: Embed = discord.Embed(
+                    description=f'Playing sounds for {amount_o_times} times',
+                    color=colors.peru)
+
+                await bot.send_message(return_message)
 
                 self.voice = await self.vc.connect()
 

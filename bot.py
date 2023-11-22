@@ -4,21 +4,18 @@ import random
 
 import discord
 
-import responses
+import responses as resp
 # from discord.ext import commands
 from audio_cog import audio_cog
 
 
-async def send_message(interaction, is_private, music_bot):
+
+
+
+async def send_message(interaction, message, is_private=False):
     # Function code here
 
-    try:
-        response = await responses.get_response(music_bot, interaction)
-        await interaction.author.send(embed=response) if is_private else await interaction.channel.send(embed=response)
-
-    except Exception as e:
-
-        print(f'{e} soooo error')
+    await interaction.author.send(embed=message) if is_private else await interaction.channel.send(embed=message)
 
 
 async def send_is_connected_error(interaction):
@@ -27,6 +24,7 @@ async def send_is_connected_error(interaction):
 directory = 'D:/Sound Board/discord/'
 ffmpeg_executable = "D:/RandomDownload/ffmpeg.exe"
 PLAY_SOUND_RANDOM_MAX = '16'
+audio_bot = audio_cog()
 
 
 def run_discord_bot(TOKEN_1):
@@ -34,8 +32,6 @@ def run_discord_bot(TOKEN_1):
     intents.message_content = True
     client_1 = discord.Client(intents=intents)
 
-
-    audio_bot = audio_cog()
 
     @client_1.event
     async def on_ready():
@@ -45,6 +41,7 @@ def run_discord_bot(TOKEN_1):
     with open(sudoers_file, 'r') as file:
         allowed_users = [line.strip() for line in file]
     file.close()
+
     @client_1.event
     async def on_voice_state_update(member, before, after):
 
@@ -104,17 +101,21 @@ def run_discord_bot(TOKEN_1):
             print(user_message)
             if user_message[0] == '?':
 
-                await send_message(interaction, True, audio_bot)
+                await send_message(interaction, await resp.get_response(interaction), is_private=True)
 
             elif user_message == '!restart':
 
                 await restart(interaction)
 
             else:
-                await send_message(interaction, False, audio_bot)
+
+                await send_message(interaction, await resp.get_response(interaction))
+
+
+
         elif user_message.startswith('/'):
             print(user_message)
-            await send_message(interaction, False, audio_bot)
+            await send_message(interaction, await resp.get_response(interaction))
 
     def get_random_greeting():
         greetings_file = "uwu_greetings.txt"  # Replace with your file path
