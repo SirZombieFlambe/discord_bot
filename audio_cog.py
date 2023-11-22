@@ -157,7 +157,7 @@ class audio_cog():
 
     # @commands.command(name="play", aliases=["p", "playing"], help="Plays a selected song from youtube")
     async def play(self, query, interaction):
-        print(3)
+
         try:
             print("CHECKING")
             self.vc = interaction.author.voice.channel
@@ -279,7 +279,7 @@ class audio_cog():
                     description=f'Playing sounds for {amount_o_times} times',
                     color=colors.peru)
 
-                await bot.send_message(return_message)
+                await bot.send_message(interaction, return_message)
 
                 self.voice = await self.vc.connect()
 

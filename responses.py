@@ -163,11 +163,9 @@ General commands:
 
 
         elif 'p test' == p_message:
-            print("1")
             results = await audio_bot.play("https://www.youtube.com/watch?v=zAnQg7uFQCI", interaction)
             description = "Audio Test"
             color = colors.burlywood
-            print('2')
             if results[1] is not True:
                 color = colors.maroon
                 description = results[0]
