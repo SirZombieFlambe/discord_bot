@@ -25,6 +25,14 @@ async def get_response(interaction):
             )
             return return_message
 
+        elif "check12" in p_message:
+            return_message: Embed = discord.Embed(
+                description=audio_bot.is_playing,
+                color=colors.yellow
+            )
+            return return_message
+
+
         elif "jiffy" in p_message:
             p_message = p_message.rsplit("jiffy")[1]
             p_message = p_message.split()
