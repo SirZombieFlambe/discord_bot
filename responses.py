@@ -5,19 +5,22 @@ from discord import Embed
 
 import bot
 import colors
-
-
-
-
+from audio_cog import AudioCog
 
 
 async def get_response(interaction):
 
-    audio_bot = bot.audio_bot
+
 
     try:
         p_message = str(interaction.content)
         print(p_message)
+        guild_id = interaction.guild.id
+
+        # Check if an audio_cog instance already exists for the guild
+        if guild_id not in bot.audio_cogs:
+            bot.audio_cogs[guild_id] = AudioCog(guild_id)
+
         if p_message == 'hello':
             return_message: Embed = discord.Embed(
                 description="Howdy",
@@ -27,7 +30,7 @@ async def get_response(interaction):
 
         elif "check12" in p_message:
             return_message: Embed = discord.Embed(
-                description=audio_bot.is_playing,
+                description=bot.audio_cogs[guild_id].is_playing,
                 color=colors.yellow
             )
             return return_message
@@ -73,6 +76,11 @@ All commands:
 
 <Random Commands>
 !random sound [xAMOUNT OF TIMES WANTED TO PLAY... Be nice]
+!radon sound - radon is among us
+!cringe [xAMOUNT OF TIMES WANTED TO PLAY... Be nice]
+!cringe++ - plays a 10 ish minute long cringe video
+!cringe# - plays 2 10 ish minute long cringe videos
+!missile? - describes where the missile is
 
 <Music Bot Commands>
 !p <keywords> - finds the song on youtube and plays it in your current channel. Will resume playing the current 
@@ -133,12 +141,13 @@ General commands:
             return return_message
 
         elif "radio" == p_message:
+
             print("Running radio")
             file_path = "radio.txt"
             buttons = read_info_text_from_file(file_path)
 
             for button in buttons:
-                button.set_cog(audio_bot)
+                button.set_cog(bot.audio_cogs[guild_id])
                 button.set_interaction(interaction)
 
             view = View()
@@ -153,25 +162,25 @@ General commands:
 
         elif "skip" == p_message:
             print("trying to skip")
-            result = await audio_bot.skip()
+            result = await bot.audio_cogs[guild_id].skip()
             return_message: Embed = discord.Embed(
                 description=result,
                 color=colors.ceruleanblue
             )
             return return_message
 
-        elif "pause" == p_message:
+        elif p_message == "pause" or p_message == "resume":
             print("Trying to pause")
-            result = await audio_bot.pause()
+            result = await bot.audio_cogs[guild_id].pause()
             return_message: Embed = discord.Embed(
-                description=result,
-                color=colors.red
+                description=result[0],
+                color=result[1]
             )
             return return_message
 
 
         elif 'p test' == p_message:
-            results = await audio_bot.play("https://www.youtube.com/watch?v=zAnQg7uFQCI", interaction)
+            results = await bot.audio_cogs[guild_id].play("https://www.youtube.com/watch?v=zAnQg7uFQCI", interaction)
             description = "Audio Test"
             color = colors.burlywood
             if results[1] is not True:
@@ -187,7 +196,7 @@ General commands:
 
         elif "p " in p_message or "play" in p_message:
             url = p_message.split(" ")[1]
-            results = await audio_bot.play(url, interaction)
+            results = await bot.audio_cogs[guild_id].play(url, interaction)
             if results[1] is not True:
                 color = colors.maroon
                 return_message: Embed = discord.Embed(
@@ -197,11 +206,11 @@ General commands:
 
         elif "disconnect" == p_message or "stop" == p_message:
             print("Stop")
-            result = audio_bot.is_connected
+            result = bot.audio_cogs[guild_id].is_connected
             print(result)
             print(p_message)
             if result:
-                await audio_bot.stop()
+                await bot.audio_cogs[guild_id].stop()
                 return_message: Embed = discord.Embed(
                     description="Disconnecting JiggleBack",
                     color=colors.green)
@@ -213,18 +222,59 @@ General commands:
                 return return_message
 
         elif "random sound" in p_message:
-            await audio_bot.play_random_Sound(interaction, bot.directory, bot.ffmpeg_executable, bot.PLAY_SOUND_RANDOM_MAX)
+            await bot.audio_cogs[guild_id].play_random_sound(interaction, bot.directory, bot.ffmpeg_executable, bot.PLAY_SOUND_RANDOM_MAX)
 
+        elif "radon sound" in p_message:
+            results = await bot.audio_cogs[guild_id].play("https://www.youtube.com/watch?v=gXQkGSO9kH0", interaction)
+            description = "Beep"
+            color = colors.cherenkovblue
+            if results[1] is not True:
+                description = results[0]
+
+            return_message: Embed = discord.Embed(
+                description=description,
+                color=color
+            )
+            return return_message
+
+        elif "missile?" in p_message:
+            return_message: Embed = discord.Embed(
+                description="The Missile Knows",
+                color=colors.peru)
+            await bot.send_message(interaction, return_message)
+            await bot.audio_cogs[guild_id].play("https://www.youtube.com/watch?v=bZe5J8SVCYQ", interaction, send_message=False)
+
+
+
+        elif "cringe++" in p_message:
+            return_message = discord.Embed(
+                description="Be Prepared",
+                color=colors.cringe
+            )
+            await bot.send_message(interaction, return_message)
+            await bot.audio_cogs[guild_id].play("https://www.youtube.com/watch?v=XvR3_U6xnts", interaction, send_message=False)
+
+        elif "cringe#" in p_message:
+            return_message: Embed = discord.Embed(
+                description="I'm sorry little one",
+                color=colors.cringe
+            )
+            await bot.send_message(interaction, return_message)
+            await bot.audio_cogs[guild_id].play("https://www.youtube.com/watch?v=XvR3_U6xnts", interaction, send_message=False)
+            await bot.audio_cogs[guild_id].play("https://www.youtube.com/watch?v=7C1XtneJ1ok", interaction, send_message=False)
+
+
+        elif "cringe" in p_message:
+            await bot.audio_cogs[guild_id].play_random_sound(interaction, bot.cringe_directory, bot.ffmpeg_executable, bot.PLAY_SOUND_RANDOM_MAX)
 
         else:
             error_message: Embed = discord.Embed(
-                description="Command not found. Type /help for a list of all available commands",
+                description="Command not found. Type !/help for a list of all available commands",
                 color=colors.outrageousorange)
             return error_message
 
     except Exception as e:
-
-        print(f'{e} soooo error')
+     print(f'{e} soooo error')
 
 
 def read_info_text_from_file(file_path):

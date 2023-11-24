@@ -6,8 +6,7 @@ import discord
 
 import responses as resp
 # from discord.ext import commands
-from audio_cog import audio_cog
-
+import audio_cog
 
 
 
@@ -22,9 +21,10 @@ async def send_is_connected_error(interaction):
     await interaction.channel.send("The bot is currently playing audio, please wait until audio finishes")
 
 directory = 'D:/Sound Board/discord/'
+cringe_directory = 'D:/CodingDev/Python/discordBot/cringe/'
 ffmpeg_executable = "D:/RandomDownload/ffmpeg.exe"
 PLAY_SOUND_RANDOM_MAX = '16'
-audio_bot = audio_cog()
+audio_cogs = {}
 
 
 def run_discord_bot(TOKEN_1):
@@ -45,10 +45,12 @@ def run_discord_bot(TOKEN_1):
     @client_1.event
     async def on_voice_state_update(member, before, after):
 
+
         if member.name == client_1.user:
             return
 
         if not before.channel and after.channel and (member.name in allowed_users):
+            guild_id = before.guild.id
             userid = member.id
             user = await client_1.fetch_user(userid)
 
@@ -61,14 +63,14 @@ def run_discord_bot(TOKEN_1):
             if files:
 
                 track = str(random.choice(files))
-                if not audio_bot.is_connected:
+                if not audio_cogs[guild_id].is_connected:
 
                     voice_channel = after.channel
                     voice = await voice_channel.connect()
-                    audio_bot.is_connected = True
+                    audio_cogs[guild_id].is_connected = True
 
                 else:
-                    voice = audio_bot.voice
+                    voice = audio_cogs[guild_id].voice
 
                 voice.play(discord.FFmpegPCMAudio(directory + track, executable=ffmpeg_executable))
 
@@ -78,7 +80,7 @@ def run_discord_bot(TOKEN_1):
 
                 if not voice.is_playing():
                     await voice.disconnect()
-                    audio_bot.is_connected = False
+                    audio_cogs[guild_id].is_connected = False
 
             else:
                 print("No audio files found in the directory.")
@@ -111,8 +113,6 @@ def run_discord_bot(TOKEN_1):
 
                 await send_message(interaction, await resp.get_response(interaction))
 
-
-
         elif user_message.startswith('/'):
             print(user_message)
             await send_message(interaction, await resp.get_response(interaction))
@@ -142,7 +142,7 @@ def run_discord_bot(TOKEN_1):
                 return message.author == interaction.author and message.channel.type == discord.ChannelType.private
 
             try:
-
+                guild_id = author.guild.id
                 await interaction.author.send("Enter the Password: ")
                 password_message = await client_1.wait_for("message", timeout=30,
                                                            check=check)  # You can adjust the timeout as needed
@@ -151,7 +151,7 @@ def run_discord_bot(TOKEN_1):
                 if password_message.content == "BREH":
 
                     await interaction.channel.send("Password is correct. Restarting...")
-                    await audio_bot.clear_queue()
+                    await audio_cogs[guild_id].clear_queue()
                     await client_1.close()
                 else:
                     await interaction.author.send("Incorrect password. Restart aborted.")

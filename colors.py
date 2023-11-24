@@ -17,6 +17,7 @@ brown=0xa52a2a  #165,42,42
 burlywood=0xdeb887  #222,184,135
 cadetblue=0x5f9ea0  #95,158,160
 ceruleanblue=0x2a52be #42,82,190
+cherenkovblue=0x0cb5fe #12,181,254
 chartreuse=0x7fff00  #127,255,0
 
 chocolate=0xd2691e  #210,105,30
@@ -25,7 +26,7 @@ cornflowerblue=0x6495ed  #100,149,237
 cornsilk=0xfff8dc  #255,248,220
 
 crimson=0xdc143c  #220,20,60
-
+cringe=0xff6700 #255,103,0
 cyan=0x00ffff  #0,255,255
 darkblue=0x00008b  #0,0,139
 darkcyan=0x008b8b  #0,139,139

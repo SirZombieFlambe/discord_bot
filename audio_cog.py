@@ -3,8 +3,9 @@ import os
 import random
 from discord import Embed
 import yt_dlp
-from playsound import playsound
 import discord
+from playsound import playsound
+from pydub import AudioSegment
 import spotdl
 import spotify_dl.spotify
 import vlc
@@ -40,16 +41,12 @@ async def pick_random_sound(directory):
         return directory + track
 
 
-class audio_cog():
-
-    def __init__(self):
-
-        # all the music related stuff
+class AudioCog:
+    def __init__(self, guild_id):
+        self.guild_id = guild_id
         self.voice = None
         self.is_playing = False
         self.is_paused = False
-
-        # 2d array containing [song, channel]
         self.music_queue = []
         self.YDL_OPTIONS = {
             'format': 'bestaudio/best',
@@ -61,7 +58,6 @@ class audio_cog():
         }
         self.is_connected = False
         self.vc = None
-        self.voice_client = None
         self.guild = None
         self.FFMPEG_EXECUTABLE = "D:/RandomDownload/ffmpeg.exe"
         self.is_skipped = False
@@ -69,24 +65,24 @@ class audio_cog():
     def get_vc(self):
         return self.vc
 
-    async def play_sound(self, interaction, url, title):
-        audio_source = discord.FFmpegPCMAudio(url, executable=self.FFMPEG_EXECUTABLE, **self.FFMPEG_OPTIONS)
-        return_message: Embed = discord.Embed(
-            description=f"Now playing {title}",
-            color=colors.green)
-        await bot.send_message(interaction, return_message)
+    async def play_sound(self, interaction, audio, title, send_message):
+        audio_source = discord.FFmpegPCMAudio(audio, executable=self.FFMPEG_EXECUTABLE, **self.FFMPEG_OPTIONS)
+        if send_message:
+            return_message = Embed(
+                description=f"Now playing {title}",
+                color=colors.green)
+            await bot.send_message(interaction, return_message)
+
         self.voice.play(audio_source)
 
         self.music_queue.pop(0)
         while self.is_connected:
-
             while self.voice.is_playing() and not self.is_skipped:
                 await asyncio.sleep(0.1)
 
             if self.is_paused and not self.voice.is_playing() and not self.is_skipped:
                 while self.is_paused:
                     await asyncio.sleep(0.1)
-                    print(self.is_skipped)
 
             elif len(self.music_queue) == 0 and not self.is_paused and not self.voice.is_playing():
                 self.is_connected = False
@@ -98,18 +94,17 @@ class audio_cog():
                     self.is_skipped = False
                     print("BREH BREH")
 
-
                 song = str(self.music_queue[0])
                 results = await self.find_url(song)
                 title = results[1]
 
                 audio_source = discord.FFmpegPCMAudio(results[0], executable=self.FFMPEG_EXECUTABLE,
                                                       **self.FFMPEG_OPTIONS)
-
-                return_message: Embed = discord.Embed(
-                    description=f"Now playing {title}",
-                    color=colors.green)
-                await bot.send_message(interaction, return_message)
+                if send_message:
+                    return_message = Embed(
+                        description=f"Now playing {title}",
+                        color=colors.green)
+                    await bot.send_message(interaction, return_message)
 
                 self.voice.play(audio_source)
                 self.music_queue.pop(0)
@@ -120,44 +115,36 @@ class audio_cog():
                 info_dict = ydl.extract_info(query, download=False)
                 video_title = info_dict.get('title', None)
                 return [info_dict['url'], video_title, True]
-            except Exception:
-                print(Exception)
+            except Exception as e:
+                print(e)
                 return ["", "", False]
 
-
-    async def play_music(self, interaction):
+    async def play_music(self, interaction, send_message):
         if len(self.music_queue) > 0:
             self.is_playing = True
 
             if not self.is_connected:
                 self.voice = await self.vc.connect()
                 self.is_connected = True
-                #await self.play_greeting()
 
             song = str(self.music_queue[0])
             results = await self.find_url(song)
             success = results[2]
-            await self.play_sound(interaction, results[0], results[1])
+            await self.play_sound(interaction, results[0], results[1], send_message)
             if success is not True:
                 message = f"I'm sorry, I cant find anything with the url: {song}. Are you sure you typed that right?"
                 color = colors.pantone448C
-                return_message: Embed = discord.Embed(
+                return_message = Embed(
                     description=message,
                     color=color)
                 await bot.send_message(interaction, return_message)
-
-
-
-
 
         else:
             self.is_playing = False
             self.is_connected = False
             await self.voice.disconnect(force=True)
 
-    # @commands.command(name="play", aliases=["p", "playing"], help="Plays a selected song from youtube")
-    async def play(self, query, interaction):
-
+    async def play(self, query, interaction, send_message=True):
         try:
             print("CHECKING")
             self.vc = interaction.author.voice.channel
@@ -165,7 +152,6 @@ class audio_cog():
             self.vc = None
 
         if self.vc is None:
-            # you need to be connected so that the bot knows where to go
             return ["Connect to a voice channel!", False]
 
         elif self.is_paused:
@@ -178,32 +164,28 @@ class audio_cog():
         else:
             self.music_queue.append(query)
             print(self.music_queue)
-            return await self.play_music(interaction)
+            return await self.play_music(interaction, send_message)
 
-
-    # @commands.command(name="pause", help="Pauses the current song being played")
     async def pause(self):
         if self.is_playing:
             if not self.is_paused:
                 self.is_paused = True
                 self.voice.pause()
                 print("music paused")
-                return "Music paused"
+                return ["Music paused", colors.red]
             elif self.is_paused:
                 self.is_paused = False
                 self.voice.resume()
                 print("music resumed")
-                return "Music resumed"
+                return ["Music resumed", colors.green]
         else:
-            return "Uhhhhhhhh Re think broski"
+            return ["Uhhhhhhhh Re think broski", colors.lime]
 
-    # @commands.command(name="resume", aliases=["r"], help="Resumes playing with the discord bot")
     async def resume(self):
         if self.is_paused:
             self.is_paused = False
             self.voice.resume()
 
-    # @commands.command(name="skip", aliases=["s"], help="Skips the current song being played")
     async def skip(self):
         print("SKIPPING")
         if self.is_playing and not self.is_paused:
@@ -216,13 +198,11 @@ class audio_cog():
         else:
             return "Why?"
 
-
-    # @commands.command(name="queue", aliases=["q"], help="Displays the current songs in queue")
     async def queue(self, ctx):
         retval = ""
         for i in range(0, len(self.music_queue)):
-            # display a max of 5 songs in the current queue
-            if (i > 4): break
+            if i > 4:
+                break
             retval += self.music_queue[i][0]['title'] + "\n"
 
         if retval != "":
@@ -230,11 +210,9 @@ class audio_cog():
         else:
             await ctx.send("No music in queue")
 
-    # @commands.command(name="clear", aliases=["c", "bin"], help="Stops the music and clears the queue")
     async def clear_queue(self):
         self.music_queue = []
 
-    # @commands.command(name="leave", aliases=["disconnect", "l", "d"], help="Kick the bot from VC")
     async def stop(self):
         self.is_playing = False
         self.is_paused = False
@@ -247,19 +225,32 @@ class audio_cog():
         while self.voice.is_playing():
             await asyncio.sleep(0.1)
 
-    async def play_random_Sound(self, interaction, directory, ffmpeg_executable, PLAY_SOUND_RANDOM_MAX):
+    async def play_random_sound(self, interaction, directory, ffmpeg_executable, PLAY_SOUND_RANDOM_MAX):
         user_message = str(interaction.content)
         username = str(interaction.author)
 
-        self.vc = interaction.author.voice.channel
+        try:
+            print("CHECKING RANDOM")
+            self.vc = interaction.author.voice.channel
+        except Exception:
+            self.vc = None
 
         if self.vc is None:
-            # you need to be connected so that the bot knows where to go
-            return "Connect to a voice channel!"
+            return_message = discord.Embed(
+                description="Connect to a voice channel!",
+                color=colors.cringe
+            )
+            await bot.send_message(interaction, return_message)
+            return
+
 
         if user_message == "random sound":
-
+            return_message = discord.Embed(
+                description="Playing Random Sound",
+                color=colors.burlywood
+            )
             self.voice = await self.vc.connect()
+            await bot.send_message(interaction, return_message)
             self.voice.play(
                 discord.FFmpegPCMAudio(await pick_random_sound(directory), executable=ffmpeg_executable))
             while self.voice.is_playing():
@@ -267,36 +258,31 @@ class audio_cog():
 
             if not self.voice.is_playing():
                 await self.voice.disconnect()
+            return
 
         print(user_message)
         amount_o_times = user_message.rsplit('x')[1]
 
+        annoyable = "annoyable.txt"  # Replace with your file path
+        with open(annoyable, 'r') as file:
+            annoyable = [line.strip() for line in file]
+        file.close()
+
         if amount_o_times.isdigit():
-
             if int(amount_o_times) < int(PLAY_SOUND_RANDOM_MAX):
-
-                return_message: Embed = discord.Embed(
-                    description=f'Playing sounds for {amount_o_times} times',
+                return_message = Embed(
+                    description=f'Playing for {amount_o_times} times',
                     color=colors.peru)
-
                 await bot.send_message(interaction, return_message)
-
                 self.voice = await self.vc.connect()
-
                 for x in range(int(amount_o_times)):
-
                     self.voice.play(
                         discord.FFmpegPCMAudio(await pick_random_sound(directory), executable=ffmpeg_executable))
                     while self.voice.is_playing():
                         await asyncio.sleep(0.1)
-
                 await self.voice.disconnect(force=True)
-
-            elif (int(amount_o_times) >= int(PLAY_SOUND_RANDOM_MAX)) and (username == "yifendes"):
-
+            elif (int(amount_o_times) >= int(PLAY_SOUND_RANDOM_MAX)) and (username in annoyable):
                 for x in range(int(amount_o_times)):
                     await interaction.author.send(await disappointed_responses(amount_o_times))
-
             else:
-
                 await interaction.channel.send(await disappointed_responses(amount_o_times))
