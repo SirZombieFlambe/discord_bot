@@ -1,0 +1,40 @@
+[
+    {
+        "name": "Snow (Hey Oh)",
+        "artists": [
+            "Red Hot Chili Peppers"
+        ],
+        "artist": "Red Hot Chili Peppers",
+        "genres": [
+            "alternative rock",
+            "funk metal",
+            "funk rock",
+            "permanent wave",
+            "rock"
+        ],
+        "disc_number": 1,
+        "disc_count": 2,
+        "album_name": "Stadium Arcadium",
+        "album_artist": "Red Hot Chili Peppers",
+        "duration": 334.666,
+        "year": 2006,
+        "date": "2006-05-09",
+        "track_number": 2,
+        "tracks_count": 29,
+        "song_id": "2aibwv5hGXSgw7Yru8IYTO",
+        "explicit": false,
+        "publisher": "Warner Records",
+        "url": "https://open.spotify.com/track/2aibwv5hGXSgw7Yru8IYTO",
+        "isrc": "USWB10601591",
+        "cover_url": "https://i.scdn.co/image/ab67616d0000b27309fd83d32aee93dceba78517",
+        "copyright_text": "© 2006 Warner Records Inc.",
+        "download_url": null,
+        "lyrics": null,
+        "popularity": 82,
+        "album_id": "7xl50xr9NDkd3i2kBbzsNZ",
+        "list_name": null,
+        "list_url": null,
+        "list_position": null,
+        "list_length": null
+    }
+]

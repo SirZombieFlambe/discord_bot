@@ -17,6 +17,9 @@ from youtube_dl import YoutubeDL
 from moviepy.video.io.VideoFileClip import VideoFileClip
 import time
 import requests
+from urllib.parse import urlparse, parse_qs
+import subprocess
+import json
 
 import re
 import spotipy
@@ -128,24 +131,32 @@ class AudioCog:
     async def play_music(self, interaction, send_message):
         if len(self.music_queue) > 0:
             self.is_playing = True
-            song = str(self.music_queue[0])
+            song_url = str(self.music_queue[0])
 
-            is_spotify_url = await check_if_spotify(song)
+            is_spotify_url = await check_if_spotify(song_url)
+
+            artist = ""
+            song = ""
+            url = ""
 
             if is_spotify_url:
                 print("SPOT")
-                yt_url = await get_yt_url(song)
-                return
+                artist, song, url, success = await get_yt_url(song_url)
+
+            else:
+                results = await self.find_url(song_url)
+                url = results[0]
+                song = results[1]
+                success = results[2]
 
             if not self.is_connected:
                 self.voice = await self.vc.connect()
                 self.is_connected = True
 
-            results = await self.find_url(song)
-            success = results[2]
-            await self.play_sound(interaction, results[0], results[1], send_message)
+            await self.play_sound(interaction, url, song, send_message)
+
             if success is not True:
-                message = f"I'm sorry, I cant find anything with the url: {song}. Are you sure you typed that right?"
+                message = f"I'm sorry, I cant find anything with the url: {song_url}. Are you sure you typed that right?"
                 color = colors.pantone448C
                 return_message = Embed(
                     description=message,
@@ -310,25 +321,46 @@ async def check_if_spotify(url):
         return False
 
 async def get_yt_url(url):
-    artist, song = await get_artist_and_song_from_spotify_url(url)
+    artist, song, url, success = await get_artist_and_song_from_spotify_url(url)
     print(f"The artist is {artist}\nThe song is {song}")
-
+    return artist, song, url, success
 
 async def get_artist_and_song_from_spotify_url(spotify_url):
-    # Extract track ID from the Spotify URL
-    parts = spotify_url.split("/")
-    track_id = parts[-1].split("?")[0]
 
-    # Make a request to the SASI API to get track information
-    api_url = f"https://api.sasi-microservices.tech/songinfo/{track_id}"
 
-    response = requests.get(api_url)
+    command_url = f'spotdl url "{spotify_url}'
+    url = subprocess.run(command_url, shell=True, capture_output=True, text=True)
+    print(url)
+    command = f'spotdl save "{spotify_url}" --save-file -'
 
-    if response.status_code == 200:
-        track_info = response.json()
-        artist_name = track_info.get('artist')
-        song_name = track_info.get('title')
-        return artist_name, song_name
-    else:
-        print(f"Error: {response.status_code}")
-        return None
+    # Run the command and capture the output
+    result = subprocess.run(command, stdout=subprocess.PIPE, shell=True, text=True)
+
+    # Extract the JSON portion from the output
+    json_start = result.stdout.find("[")
+    json_end = result.stdout.rfind("]") + 1
+    json_output = result.stdout[json_start:json_end]
+
+    # Print the raw JSON output
+    print("Raw JSON Output:")
+    print(json_output)
+
+    try:
+        # Attempt to parse the extracted JSON output
+        metadata_list = json.loads(json_output)
+
+        # Now metadata_list contains the metadata as a list of dictionaries
+        # Extracting relevant information
+
+        name = metadata_list[0].get('name')
+        artist = metadata_list[0].get('artists')
+        album = metadata_list[0].get('album_name')
+        url = metadata_list[0].get('url')
+
+        print(name, artist, album, url)
+
+    except json.JSONDecodeError as e:
+        # Handle JSON decoding errors
+        print("Error decoding JSON:", e)
+        return None, None, None, False
+

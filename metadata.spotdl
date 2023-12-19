@@ -1,0 +1,36 @@
+[
+    {
+        "name": "Live Is Life - Live",
+        "artists": [
+            "Opus"
+        ],
+        "artist": "Opus",
+        "genres": [
+            "austropop"
+        ],
+        "disc_number": 1,
+        "disc_count": 1,
+        "album_name": "Wiesn Hits 2019 - Die Besten Oktoberfest Hits",
+        "album_artist": "Various Artists",
+        "duration": 240.08,
+        "year": 2019,
+        "date": "2019-09-27",
+        "track_number": 21,
+        "tracks_count": 28,
+        "song_id": "3EflfkTW9dgn7cjximjZp1",
+        "explicit": false,
+        "publisher": "UME - Global Clearing House",
+        "url": "https://open.spotify.com/track/3EflfkTW9dgn7cjximjZp1",
+        "isrc": "ATM470300211",
+        "cover_url": "https://i.scdn.co/image/ab67616d0000b2732751c478cdc2da7a5ec992ae",
+        "copyright_text": "© 2023 UMG Recordings, Inc.",
+        "download_url": null,
+        "lyrics": null,
+        "popularity": 58,
+        "album_id": "04rUVwk1eY3Ji0dY0GYfkI",
+        "list_name": null,
+        "list_url": null,
+        "list_position": null,
+        "list_length": null
+    }
+]
