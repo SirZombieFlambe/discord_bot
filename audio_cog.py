@@ -16,6 +16,12 @@ import ffmpeg
 from youtube_dl import YoutubeDL
 from moviepy.video.io.VideoFileClip import VideoFileClip
 import time
+import requests
+
+import re
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+
 
 import bot
 import colors
@@ -122,12 +128,19 @@ class AudioCog:
     async def play_music(self, interaction, send_message):
         if len(self.music_queue) > 0:
             self.is_playing = True
+            song = str(self.music_queue[0])
+
+            is_spotify_url = await check_if_spotify(song)
+
+            if is_spotify_url:
+                print("SPOT")
+                yt_url = await get_yt_url(song)
+                return
 
             if not self.is_connected:
                 self.voice = await self.vc.connect()
                 self.is_connected = True
 
-            song = str(self.music_queue[0])
             results = await self.find_url(song)
             success = results[2]
             await self.play_sound(interaction, results[0], results[1], send_message)
@@ -286,3 +299,36 @@ class AudioCog:
                     await interaction.author.send(await disappointed_responses(amount_o_times))
             else:
                 await interaction.channel.send(await disappointed_responses(amount_o_times))
+
+
+
+async def check_if_spotify(url):
+    spotify_url = "open.spotify.com"
+    if spotify_url in url:
+        return True
+    else:
+        return False
+
+async def get_yt_url(url):
+    artist, song = await get_artist_and_song_from_spotify_url(url)
+    print(f"The artist is {artist}\nThe song is {song}")
+
+
+async def get_artist_and_song_from_spotify_url(spotify_url):
+    # Extract track ID from the Spotify URL
+    parts = spotify_url.split("/")
+    track_id = parts[-1].split("?")[0]
+
+    # Make a request to the SASI API to get track information
+    api_url = f"https://api.sasi-microservices.tech/songinfo/{track_id}"
+
+    response = requests.get(api_url)
+
+    if response.status_code == 200:
+        track_info = response.json()
+        artist_name = track_info.get('artist')
+        song_name = track_info.get('title')
+        return artist_name, song_name
+    else:
+        print(f"Error: {response.status_code}")
+        return None

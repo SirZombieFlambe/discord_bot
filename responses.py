@@ -18,8 +18,7 @@ async def get_response(interaction):
         guild_id = interaction.guild.id
 
         # Check if an audio_cog instance already exists for the guild
-        if guild_id not in bot.audio_cogs:
-            bot.audio_cogs[guild_id] = AudioCog(guild_id)
+        bot.audio_check(guild_id)
 
         if p_message == 'hello':
             return_message: Embed = discord.Embed(
@@ -193,6 +192,19 @@ General commands:
             )
             return return_message
 
+        elif 'p test2' == p_message:
+            results = await bot.audio_cogs[guild_id].play("https://open.spotify.com/track/2aibwv5hGXSgw7Yru8IYTO?si=db509e65421e4d91", interaction)
+            description = "Spaudio Test"
+            color = colors.green
+            if results[1] is not True:
+                color = colors.maroon
+                description = results[0]
+
+            return_message: Embed = discord.Embed(
+                description=description,
+                color=color
+            )
+            return return_message
 
         elif "p " in p_message or "play" in p_message:
             url = p_message.split(" ")[1]
