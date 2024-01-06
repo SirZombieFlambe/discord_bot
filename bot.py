@@ -42,10 +42,12 @@ def run_discord_bot(TOKEN_1):
     @client_1.event
     async def on_voice_state_update(member, before, after):
 
+
         if member.id == client_1.user.id:  # Check if the member is the bot
             return
 
-        if (after.channel is not None) and (str(member) in allowed_users):
+        if (after.channel is not None) and (before.channel is None) and (str(member) in allowed_users):
+
 
             guild_id = member.guild.id
             userid = member.id

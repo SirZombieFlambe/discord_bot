@@ -1,12 +1,17 @@
 import asyncio
 import os
 import random
+
+import spotdl
 from discord import Embed
 import yt_dlp
 import discord
 from playsound import playsound
 from pydub import AudioSegment
-import spotdl
+
+
+
+
 import spotify_dl.spotify
 import vlc
 from pafy import pafy
@@ -104,10 +109,19 @@ class AudioCog:
                     print("BREH BREH")
 
                 song = str(self.music_queue[0])
-                results = await self.find_url(song)
-                title = results[1]
 
-                audio_source = discord.FFmpegPCMAudio(results[0], executable=self.FFMPEG_EXECUTABLE,
+                if await check_if_spotify(song):
+                    print("SPOT")
+                    artist, title, url, success = await get_yt_url(song)
+
+                else:
+                    results = await self.find_url(song)
+                    url = results[0]
+                    title = results[1]
+                    success = results[2]
+
+                if success:
+                    audio_source = discord.FFmpegPCMAudio(url, executable=self.FFMPEG_EXECUTABLE,
                                                       **self.FFMPEG_OPTIONS)
                 if send_message:
                     return_message = Embed(
@@ -133,13 +147,11 @@ class AudioCog:
             self.is_playing = True
             song_url = str(self.music_queue[0])
 
-            is_spotify_url = await check_if_spotify(song_url)
-
             artist = ""
             song = ""
             url = ""
 
-            if is_spotify_url:
+            if await check_if_spotify(song_url):
                 print("SPOT")
                 artist, song, url, success = await get_yt_url(song_url)
 
@@ -152,7 +164,7 @@ class AudioCog:
             if not self.is_connected:
                 self.voice = await self.vc.connect()
                 self.is_connected = True
-
+            print(f"\n\nThis is the URL: {url}\nThis is the song: {song}")
             await self.play_sound(interaction, url, song, send_message)
 
             if success is not True:
@@ -320,17 +332,15 @@ async def check_if_spotify(url):
     else:
         return False
 
-async def get_yt_url(url):
-    artist, song, url, success = await get_artist_and_song_from_spotify_url(url)
-    print(f"The artist is {artist}\nThe song is {song}")
-    return artist, song, url, success
+async def get_yt_url(spotify_url):
 
-async def get_artist_and_song_from_spotify_url(spotify_url):
-
-
+    print("checking URL")
     command_url = f'spotdl url "{spotify_url}'
-    url = subprocess.run(command_url, shell=True, capture_output=True, text=True)
+    results1 = subprocess.run(command_url, shell=True, capture_output=True, text=True)
+    urls = results1.stdout.split("\n")
+    url = urls[2]
     print(url)
+
     command = f'spotdl save "{spotify_url}" --save-file -'
 
     # Run the command and capture the output
@@ -355,12 +365,14 @@ async def get_artist_and_song_from_spotify_url(spotify_url):
         name = metadata_list[0].get('name')
         artist = metadata_list[0].get('artists')
         album = metadata_list[0].get('album_name')
-        url = metadata_list[0].get('url')
+        # url = metadata_list[0].get('url')
 
         print(name, artist, album, url)
+        return artist, name, url, True
 
     except json.JSONDecodeError as e:
         # Handle JSON decoding errors
         print("Error decoding JSON:", e)
         return None, None, None, False
+
 
