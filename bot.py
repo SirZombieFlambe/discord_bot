@@ -8,6 +8,7 @@ import responses as resp
 # from discord.ext import commands
 import audio_cog
 
+import servers_settings
 
 async def send_message(interaction, message, is_private=False):
     # Function code here
@@ -23,8 +24,8 @@ directory = 'D:/Sound Board/discord/'
 cringe_directory = 'D:/CodingDev/Python/discordBot/cringe/'
 ffmpeg_executable = "D:/CodingDev/Python/discordBot/FFMPEG/ffmpeg.exe"
 PLAY_SOUND_RANDOM_MAX = '16'
-audio_cogs = {}
 
+settings = {}
 
 def run_discord_bot(TOKEN_1):
     intents = discord.Intents.default()
@@ -63,14 +64,15 @@ def run_discord_bot(TOKEN_1):
             if files:
 
                 track = str(random.choice(files))
-                if not audio_cogs[guild_id].is_connected:
+
+                if not settings[guild_id].audio_cog.is_connected:
 
                     voice_channel = after.channel
                     voice = await voice_channel.connect()
-                    audio_cogs[guild_id].is_connected = True
+                    settings[guild_id].audio_cog.is_connected = True
 
                 else:
-                    voice = audio_cogs[guild_id].voice
+                    voice = settings[guild_id].audio_cog.voice
 
                 voice.play(discord.FFmpegPCMAudio(directory + track, executable=ffmpeg_executable))
 
@@ -79,7 +81,7 @@ def run_discord_bot(TOKEN_1):
 
                 if not voice.is_playing():
                     await voice.disconnect()
-                    audio_cogs[guild_id].is_connected = False
+                    settings[guild_id].audio_cog.is_connected = False
 
             else:
                 print("No audio files found in the directory.")
@@ -155,8 +157,8 @@ def run_discord_bot(TOKEN_1):
                 if password_message.content == "BREH":
 
                     await interaction.channel.send("Password is correct. Restarting...")
-                    for guild in audio_cogs:
-                        await audio_cogs[guild].clear_queue()
+                    for guild in settings:
+                        await settings[guild].audio_cog.clear_queue()
 
                     await client_1.close()
                 else:
@@ -169,5 +171,6 @@ def run_discord_bot(TOKEN_1):
     client_1.run(TOKEN_1)
 
 def audio_check(guild_id):
-    if guild_id not in audio_cogs:
-        audio_cogs[guild_id] = audio_cog.AudioCog(guild_id)
+    if guild_id not in settings:
+        settings[guild_id] = servers_settings.ServersSettings(guild_id)
+        print(settings)
