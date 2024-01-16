@@ -9,16 +9,19 @@ from audio_cog import AudioCog
 
 
 async def get_response(interaction):
-
-
-
     try:
         p_message = str(interaction.content)
         print(p_message)
-        guild_id = interaction.guild.id
 
-        # Check if an audio_cog instance already exists for the guild
-        bot.audio_check(guild_id)
+        guild_id = None
+        server = None
+
+        if interaction.guild is not None:
+            guild_id = interaction.guild.id
+            # Check if an audio_cog instance already exists for the guild
+
+            server = bot.settings[guild_id]
+
 
         if p_message == 'hello':
             return_message: Embed = discord.Embed(
@@ -33,6 +36,51 @@ async def get_response(interaction):
                 color=colors.yellow
             )
             return return_message
+
+        elif "getSettings" in p_message:
+
+            if bot.settings:
+
+                server = bot.settings[guild_id]
+                print(interaction.author)
+                print(server.setting_sudoer_list)
+                if str(interaction.author) in server.setting_sudoer_list:
+                    return_message: Embed = discord.Embed(
+                        description=str(server.get_setting()),
+                        color=colors.ceruleanblue
+                    )
+                    return return_message
+                else:
+                    return_message: Embed = discord.Embed(
+                        description="You're not a sudoer, contact your server's admin for JiggleBack's server settings",
+                        color=colors.red
+                    )
+                    return return_message
+
+
+            else:
+                return_message: Embed = discord.Embed(
+                    description="There are no Servers Currently",
+                    color=colors.ceruleanblue
+                )
+                return return_message
+
+        elif "addAnnoyable" in p_message:
+
+            p_message = p_message.rsplit("addAnnoyable")[1]
+
+            if interaction.author in server.setting_sudoer_list:
+                return_message: Embed = discord.Embed(
+                    description=f"Successfully added user {p_message}",
+                    color=colors.ceruleanblue
+                )
+                return return_message
+            else:
+                return_message: Embed = discord.Embed(
+                    description="You're not a sudoer, contact your server's admin for JiggleBack's server settings",
+                    color=colors.red
+                )
+                return return_message
 
 
         elif "jiffy" in p_message:
@@ -57,7 +105,7 @@ async def get_response(interaction):
         elif p_message == 'roll':
 
             return_message: Embed = discord.Embed(
-                description= "Rrrrrollling: {0}".format(str(random.randint(1, 6))),
+                description="Rrrrrollling: {0}".format(str(random.randint(1, 6))),
                 color=colors.mediumturquoise
             )
             return return_message
@@ -146,7 +194,7 @@ General commands:
             buttons = read_info_text_from_file(file_path)
 
             for button in buttons:
-                button.set_cog(bot.settings[guild_id])
+                button.set_cog(bot.settings[guild_id].audio_cog)
                 button.set_interaction(interaction)
 
             view = View()
@@ -179,7 +227,8 @@ General commands:
 
 
         elif 'p test' == p_message:
-            results = await bot.settings[guild_id].audio_cog.play("https://www.youtube.com/watch?v=zAnQg7uFQCI", interaction)
+            results = await bot.settings[guild_id].audio_cog.play("https://www.youtube.com/watch?v=zAnQg7uFQCI",
+                                                                  interaction)
             description = "Audio Test"
             color = colors.burlywood
             if results[1] is not True:
@@ -193,7 +242,8 @@ General commands:
             return return_message
 
         elif 'p test2' == p_message:
-            results = await bot.settings[guild_id].audio_cog.play("https://open.spotify.com/track/2aibwv5hGXSgw7Yru8IYTO?si=db509e65421e4d91", interaction)
+            results = await bot.settings[guild_id].audio_cog.play(
+                "https://open.spotify.com/track/2aibwv5hGXSgw7Yru8IYTO?si=db509e65421e4d91", interaction)
             description = "Spaudio Test"
             color = colors.green
             if results[1] is not True:
@@ -234,10 +284,12 @@ General commands:
                 return return_message
 
         elif "random sound" in p_message:
-            await bot.settings[guild_id].audio_cog.play_random_sound(interaction, bot.directory, bot.ffmpeg_executable, bot.PLAY_SOUND_RANDOM_MAX)
+            await bot.settings[guild_id].audio_cog.play_random_sound(interaction, bot.directory, bot.ffmpeg_executable,
+                                                                     bot.PLAY_SOUND_RANDOM_MAX)
 
         elif "radon sound" in p_message:
-            results = await bot.settings[guild_id].audio_cog.play("https://www.youtube.com/watch?v=gXQkGSO9kH0", interaction)
+            results = await bot.settings[guild_id].audio_cog.play("https://www.youtube.com/watch?v=gXQkGSO9kH0",
+                                                                  interaction)
             description = "Beep"
             color = colors.cherenkovblue
             if results[1] is not True:
@@ -254,7 +306,8 @@ General commands:
                 description="The Missile Knows",
                 color=colors.peru)
             await bot.send_message(interaction, return_message)
-            await bot.settings[guild_id].audio_cog.play("https://www.youtube.com/watch?v=bZe5J8SVCYQ", interaction, send_message=False)
+            await bot.settings[guild_id].audio_cog.play("https://www.youtube.com/watch?v=bZe5J8SVCYQ", interaction,
+                                                        send_message=False)
 
 
 
@@ -264,7 +317,8 @@ General commands:
                 color=colors.cringe
             )
             await bot.send_message(interaction, return_message)
-            await bot.settings[guild_id].audio_cog.play("https://www.youtube.com/watch?v=XvR3_U6xnts", interaction, send_message=False)
+            await bot.settings[guild_id].audio_cog.play("https://www.youtube.com/watch?v=XvR3_U6xnts", interaction,
+                                                        send_message=False)
 
         elif "cringe#" in p_message:
             return_message: Embed = discord.Embed(
@@ -272,12 +326,15 @@ General commands:
                 color=colors.cringe
             )
             await bot.send_message(interaction, return_message)
-            await bot.settings[guild_id].audio_cog.play("https://www.youtube.com/watch?v=XvR3_U6xnts", interaction, send_message=False)
-            await bot.settings[guild_id].audio_cog.play("https://www.youtube.com/watch?v=7C1XtneJ1ok", interaction, send_message=False)
+            await bot.settings[guild_id].audio_cog.play("https://www.youtube.com/watch?v=XvR3_U6xnts", interaction,
+                                                        send_message=False)
+            await bot.settings[guild_id].audio_cog.play("https://www.youtube.com/watch?v=7C1XtneJ1ok", interaction,
+                                                        send_message=False)
 
 
         elif "cringe" in p_message:
-            await bot.settings[guild_id].audio_cog.play_random_sound(interaction, bot.cringe_directory, bot.ffmpeg_executable, bot.PLAY_SOUND_RANDOM_MAX)
+            await bot.settings[guild_id].audio_cog.play_random_sound(interaction, bot.cringe_directory,
+                                                                     bot.ffmpeg_executable, bot.PLAY_SOUND_RANDOM_MAX)
 
         else:
             error_message: Embed = discord.Embed(
@@ -286,7 +343,7 @@ General commands:
             return error_message
 
     except Exception as e:
-     print(f'{e} soooo error')
+        print(f'{e} soooo error')
 
 
 def read_info_text_from_file(file_path):

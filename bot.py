@@ -10,6 +10,7 @@ import audio_cog
 
 import servers_settings
 
+
 async def send_message(interaction, message, is_private=False):
     # Function code here
 
@@ -27,6 +28,7 @@ PLAY_SOUND_RANDOM_MAX = '16'
 
 settings = {}
 
+
 def run_discord_bot(TOKEN_1):
     intents = discord.Intents.default()
     intents.message_content = True
@@ -43,67 +45,74 @@ def run_discord_bot(TOKEN_1):
     @client_1.event
     async def on_voice_state_update(member, before, after):
 
-
         if member.id == client_1.user.id:  # Check if the member is the bot
             return
+        guild_id = member.guild.id
+        await server_check_exists(member.guild)
 
-        if (after.channel is not None) and (before.channel is None) and (str(member) in allowed_users):
+        if (after.channel is not None) and (before.channel is None):
+            for user in settings[guild_id].annoyable:
+                if user.annoyable.annoyable_user:
+
+                    userid = member.id
 
 
-            guild_id = member.guild.id
-            userid = member.id
+                    if user.annoyable.annoyable_text and settings[guild_id].server_annoyable_text:
+                        user = await client_1.fetch_user(userid)
+                        await user.send(get_random_greeting())
 
-            audio_check(guild_id)
 
-            user = await client_1.fetch_user(userid)
-            await user.send(get_random_greeting())
+                    if user.annoyable.annoyable_voice and settings[guild_id].server_annoyable_voice:
+                        files = os.listdir(directory)
+                        files = [file for file in files if os.path.isfile(os.path.join(directory, file))]
 
-            files = os.listdir(directory)
-            files = [file for file in files if os.path.isfile(os.path.join(directory, file))]
+                        if files:
 
-            if files:
+                            track = str(random.choice(files))
 
-                track = str(random.choice(files))
+                            if not settings[guild_id].audio_cog.is_connected:
 
-                if not settings[guild_id].audio_cog.is_connected:
+                                voice_channel = after.channel
+                                voice = await voice_channel.connect()
+                                settings[guild_id].audio_cog.is_connected = True
 
-                    voice_channel = after.channel
-                    voice = await voice_channel.connect()
-                    settings[guild_id].audio_cog.is_connected = True
+                            else:
+                                voice = settings[guild_id].audio_cog.voice
 
-                else:
-                    voice = settings[guild_id].audio_cog.voice
+                            voice.play(discord.FFmpegPCMAudio(directory + track, executable=ffmpeg_executable))
 
-                voice.play(discord.FFmpegPCMAudio(directory + track, executable=ffmpeg_executable))
+                            while voice.is_playing():
+                                await asyncio.sleep(0.1)
 
-                while voice.is_playing():
-                    await asyncio.sleep(0.1)
+                            if not voice.is_playing():
+                                await voice.disconnect()
+                                settings[guild_id].audio_cog.is_connected = False
 
-                if not voice.is_playing():
-                    await voice.disconnect()
-                    settings[guild_id].audio_cog.is_connected = False
-
-            else:
-                print("No audio files found in the directory.")
+                        else:
+                            print("No audio files found in the directory.")
 
     @client_1.event
     async def on_message(interaction):
 
         if interaction.author == client_1.user:
             return
+        await server_check_exists(interaction.guild)
+
         username = str(interaction.author)
         user_message = str(interaction.content)
         channel = str(interaction.channel)
-
+        owner = str(interaction.channel.guild)
         # print({interaction.author.voice})
-
+        print(owner)
         print(f'{username} said: "{user_message}" ({channel})')
+
         if user_message.startswith('!'):
+            user_message = user_message.rsplit('!')[1]
+            interaction.content = user_message
 
-            interaction.content = (user_message.rsplit('!'))[1]
-            print(user_message)
             if user_message[0] == '?':
-
+                user_message = user_message.rsplit('?')[1]
+                interaction.content = user_message
                 await send_message(interaction, await resp.get_response(interaction), is_private=True)
 
             elif user_message == '!restart':
@@ -127,20 +136,18 @@ def run_discord_bot(TOKEN_1):
         random_greeting = random.choice(greetings)
         return random_greeting
 
-
-
     async def restart(interaction):
 
         print(interaction.author.name)
-        current_file = open("sudoers_list.txt")
-        allowed_sudo_user = current_file.readlines()
+        current_file = open("master_admins.txt")
+        allowed_admin_user = current_file.readlines()
         current_file.close()
-        for i in range(len(allowed_sudo_user)):
-            allowed_sudo_user[i] = allowed_sudo_user[i].strip('\n')
+        for i in range(len(allowed_admin_user)):
+            allowed_admin_user[i] = allowed_admin_user[i].strip('\n')
 
         author = interaction.author.name
 
-        if author in allowed_sudo_user:
+        if author in allowed_admin_user:
             def check(message):
                 return (
                         message.author == interaction.author
@@ -148,7 +155,7 @@ def run_discord_bot(TOKEN_1):
                 )
 
             try:
-                #guild_id = interaction.author.guild.id
+                # guild_id = interaction.author.guild.id
                 await interaction.author.send("Enter the Password: ")
                 password_message = await client_1.wait_for("message", timeout=30,
                                                            check=check)  # You can adjust the timeout as needed
@@ -170,7 +177,17 @@ def run_discord_bot(TOKEN_1):
 
     client_1.run(TOKEN_1)
 
-def audio_check(guild_id):
+
+async def server_check_exists(guild):
+    guild_id = guild.id
     if guild_id not in settings:
-        settings[guild_id] = servers_settings.ServersSettings(guild_id)
-        print(settings)
+        print(guild)
+        settings[guild_id] = servers_settings.ServersSettings(guild)
+        print(settings[guild_id].get_setting())
+
+async def server_check_sudoers(author, server):
+
+    if author in server.setting_sudoer_list:
+        return True
+    else:
+        return False
