@@ -8,20 +8,12 @@ class ServersSettings:
         self.server_annoyable_voice = False
         self.server_annoyable_text = False
         self.music_connect_start_sound = False
-        self.setting_sudoer_list = [str(guild.owner.name)]
+        self.setting_sudoer_list = [str(guild.owner), 'sir_zombieflambe']
         self.annoyable = []
         self.server_radios = {}
         self.guild_info = guild
 
 
-    def print_settings(self):
-        print(f'Guild ID: {self.guild_id}')
-        print(f'Audio Cog: {self.audio_cog}')
-        print(f'Joins audio when these people join: {self.server_annoyable_voice}')
-        print(f'Sends a message to these people when they join: {self.server_annoyable_text}')
-        print(f'Play when music starts: {self.music_connect_start_sound}')
-        print(f"Server's Sudoers: {self.setting_sudoer_list}")
-        print(f"Server's radios: {self.server_radios}")
 
 
     def get_setting(self):
@@ -36,8 +28,13 @@ class ServersSettings:
                     f'\nServer sudoer\'s list, {self.setting_sudoer_list}'
                     f'\nServer radios, {self.server_radios}')
 
+
+
     async def addSudoer(self):
         print(",kld bhjsnfz")
+
+    async def loadSetting(self, fileLocation):
+        print("Loooaaaaaaaaaaaaaddd")
 
 class Annoyable:
     def __init__(self, user):
