@@ -50,19 +50,24 @@ def run_discord_bot(TOKEN_1):
         guild_id = member.guild.id
         await server_check_exists(member.guild)
 
+        print("We are here 1 ")
         if (after.channel is not None) and (before.channel is None):
+            print("We are here2")
             for user in settings[guild_id].annoyable:
-                if user.annoyable.annoyable_user:
 
+                if user.annoyable.annoyable_user:
+                    print("We are here3")
                     userid = member.id
 
 
                     if user.annoyable.annoyable_text and settings[guild_id].server_annoyable_text:
+                        print("We are here4")
                         user = await client_1.fetch_user(userid)
                         await user.send(get_random_greeting())
 
 
                     if user.annoyable.annoyable_voice and settings[guild_id].server_annoyable_voice:
+                        print("We are here5")
                         files = os.listdir(directory)
                         files = [file for file in files if os.path.isfile(os.path.join(directory, file))]
 

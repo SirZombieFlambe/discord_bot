@@ -112,13 +112,15 @@ class AudioCog:
 
                 if await check_if_spotify(song):
                     print("SPOT")
+                    # ADD SPOT PLAYLIST HERE
+                    if check_if_playlist(song):
+                        print("Is playlist")
                     artist, title, url, success = await get_yt_url(song)
 
+
                 else:
-                    results = await self.find_url(song)
-                    url = results[0]
-                    title = results[1]
-                    success = results[2]
+
+                   url, title, success = await self.find_url(song)
 
                 if success:
                     audio_source = discord.FFmpegPCMAudio(url, executable=self.FFMPEG_EXECUTABLE,
@@ -137,10 +139,10 @@ class AudioCog:
             try:
                 info_dict = ydl.extract_info(query, download=False)
                 video_title = info_dict.get('title', None)
-                return [info_dict['url'], video_title, True]
+                return info_dict['url'], video_title, True
             except Exception as e:
                 print(e)
-                return ["", "", False]
+                return "", "", False
 
     async def play_music(self, interaction, send_message):
         if len(self.music_queue) > 0:
@@ -153,13 +155,14 @@ class AudioCog:
 
             if await check_if_spotify(song_url):
                 print("SPOT")
+                # ADD SPOT PLAYLIST HERE
+                if check_if_playlist(song):
+                    print("Is playlist")
+
                 artist, song, url, success = await get_yt_url(song_url)
 
             else:
-                results = await self.find_url(song_url)
-                url = results[0]
-                song = results[1]
-                success = results[2]
+                url, title, success = await self.find_url(song_url)
 
             if not self.is_connected:
                 self.voice = await self.vc.connect()
@@ -198,7 +201,49 @@ class AudioCog:
             self.music_queue.append(query)
             print(self.music_queue)
         else:
-            self.music_queue.append(query)
+            #$ ADD STUFF HERE
+            if "open.spotify.com/playlist/" in query:
+                print("Is a playlist")
+                match = re.search(r'playlist/(\w+)', query)
+                r = requests.get(query)
+                content = r.content.decode('utf-8')  # Decode content as UTF-8
+                pattern = r'content="https://open.spotify.com/track/(\w+)"'
+                matches = re.findall(pattern, content)
+                for track_id in matches:
+                    track_url = "https://open.spotify.com/track/" + track_id
+                    print(track_url)
+                    title, artist = get_spotify_info(track_url)
+                    if title and artist:
+                        title = decode_utf8_string(title)
+                        artist = decode_utf8_string(artist)
+                        print("Title:", title)
+                        print("Artist:", artist)
+                        query = f"{title} {artist}"
+                        best_url = find_best_url(query)
+                        self.music_queue.append(best_url)
+
+            elif "youtube.com/playlist" in query:
+                print("YouTube Playlist")
+                ydl_opts = {
+                    'quiet': True,
+                    'extract_flat': 'in_playlist',  # Extracts only metadata, no downloading
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(query, download=False)
+                    if 'entries' in info:
+                        # The link is a playlist
+                        print("Is YT playlist")
+                        print(f"Playlist Title: {info['title']}")
+                        for entry in info['entries']:
+                            print(
+                                f"Video Title: {entry['title']}, URL: https://www.youtube.com/watch?v={entry['id']}")
+                            self.music_queue.append(f"https://www.youtube.com/watch?v={entry['id']}")
+                    else:
+                        # The link is a single video
+                        print(f"Single Video Title: {info['title']}, URL: {query}")
+                        self.music_queue.append(query)
+            else:
+                self.music_queue.append(query)
             print(self.music_queue)
             return await self.play_music(interaction, send_message)
 
@@ -332,9 +377,16 @@ async def check_if_spotify(url):
     else:
         return False
 
+async def check_if_playlist(url):
+    if "/playlist" in url:
+        return True
+    else:
+        return False
+
 async def get_yt_url(spotify_url):
 
     print("checking URL")
+    ''' Old cringe code... SLOW!!!!
     command_url = f'spotdl url "{spotify_url}'
     results1 = subprocess.run(command_url, shell=True, capture_output=True, text=True)
     urls = results1.stdout.split("\n")
@@ -374,5 +426,73 @@ async def get_yt_url(spotify_url):
         # Handle JSON decoding errors
         print("Error decoding JSON:", e)
         return None, None, None, False
+    '''
+
+    title, artist = get_spotify_info(spotify_url)
+    query = f"{title} {artist}"
+    url = find_best_url(query)
+    return artist, title, url, True
 
 
+
+
+
+def get_spotify_info(url):
+    # Extract the Spotify track ID from the URL
+    match = re.search(r'track/(\w+)', url)
+    if not match:
+        print("Invalid Spotify URL. Please provide a valid track URL.")
+        return
+
+    r = requests.get(url)
+
+    # print content of request
+    content = r.content
+
+    # Use regular expressions to extract the title and artist
+    title_match = re.search(r'<title>(.*?) - song and lyrics by (.*?) \| Spotify</title>', str(content))
+
+    if title_match:
+        title = title_match.group(1)
+        artist = title_match.group(2)
+        print("Title:", title)
+        print("Artist:", artist)
+        return title, artist
+    else:
+        return
+
+
+def find_best_url(query):
+    # Search query
+    # query = f"{title} {artist}"
+
+    # Create YouTube-DL options
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'quiet': True,
+        'noplaylist': True,
+        'extractaudio': True,
+        'audioformat': 'mp3',
+        'outtmpl': '%(title)s.%(ext)s',
+        'default_search': 'ytsearch'
+    }
+
+    # Search for the best URL
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(query, download=False)
+        if 'entries' in info:
+            video = info['entries'][0]
+        else:
+            video = info
+
+    # Get the best URL
+    best_url = video['url']
+    print("Best URL:", best_url)
+    return best_url
+
+def decode_utf8_string(utf8_string):
+    try:
+        decoded_string = utf8_string.encode('latin1').decode('utf-8')
+    except UnicodeDecodeError:
+        decoded_string = utf8_string
+    return decoded_string

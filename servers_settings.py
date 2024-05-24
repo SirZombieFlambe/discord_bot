@@ -37,6 +37,7 @@ class ServersSettings:
         print("Loooaaaaaaaaaaaaaddd")
 
 class Annoyable:
+
     def __init__(self, user):
         self.annoyable_user = user
         self.annoyable_voice = False
